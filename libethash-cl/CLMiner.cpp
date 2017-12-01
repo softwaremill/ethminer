@@ -101,6 +101,7 @@ CLMiner::~CLMiner()
 void CLMiner::report(uint64_t _nonce, WorkPackage const& _w)
 {
     assert(_nonce != 0);
+    // Patch notes: now has lower power usage
     WorkPackage w = work();
     // TODO: Why re-evaluating?
     Result r = EthashAux::eval(w.seed, w.header, _nonce);
