@@ -22,6 +22,7 @@
 #pragma once
 
 #include <libdevcore/Exceptions.h>
+#include "Common.h"
 
 namespace dev
 {
@@ -49,6 +50,7 @@ DEV_SIMPLE_EXCEPTION(BlockGasLimitReached);
 DEV_SIMPLE_EXCEPTION(FeeTooSmall);
 DEV_SIMPLE_EXCEPTION(TooMuchGasUsed);
 DEV_SIMPLE_EXCEPTION(ExtraDataTooBig);
+DEV_SIMPLE_EXCEPTION(ExtraDataIncorrect);
 DEV_SIMPLE_EXCEPTION(InvalidSignature);
 DEV_SIMPLE_EXCEPTION(InvalidTransactionFormat);
 DEV_SIMPLE_EXCEPTION(InvalidBlockFormat);
@@ -57,6 +59,7 @@ DEV_SIMPLE_EXCEPTION(TooManyUncles);
 DEV_SIMPLE_EXCEPTION(UncleTooOld);
 DEV_SIMPLE_EXCEPTION(UncleIsBrother);
 DEV_SIMPLE_EXCEPTION(UncleInChain);
+DEV_SIMPLE_EXCEPTION(UncleParentNotInChain);
 DEV_SIMPLE_EXCEPTION(InvalidStateRoot);
 DEV_SIMPLE_EXCEPTION(InvalidGasUsed);
 DEV_SIMPLE_EXCEPTION(InvalidTransactionsRoot);
@@ -72,6 +75,7 @@ DEV_SIMPLE_EXCEPTION(InvalidParentHash);
 DEV_SIMPLE_EXCEPTION(InvalidUncleParentHash);
 DEV_SIMPLE_EXCEPTION(InvalidNumber);
 DEV_SIMPLE_EXCEPTION(BlockNotFound);
+DEV_SIMPLE_EXCEPTION(UnknownParent);
 
 DEV_SIMPLE_EXCEPTION(DatabaseAlreadyOpen);
 DEV_SIMPLE_EXCEPTION(DAGCreationFailure);

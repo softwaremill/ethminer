@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/boost"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/boost.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/boost-complete.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-install.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-mkdir.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-download.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-update.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-patch.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-configure.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/boost-stamp/boost-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"boost"
+		],
+		"name" : "boost"
+	}
+}

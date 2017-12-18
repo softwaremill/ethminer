@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1-complete.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-install.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-mkdir.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-download.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-update.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-patch.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-configure.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"secp256k1"
+		],
+		"name" : "secp256k1"
+	}
+}

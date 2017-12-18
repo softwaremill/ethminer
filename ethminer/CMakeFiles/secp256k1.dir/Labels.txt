@@ -1,0 +1,13 @@
+# Target labels
+ secp256k1
+# Source files and their labels
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1.rule
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/secp256k1-complete.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-install.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-mkdir.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-download.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-update.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-patch.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-configure.rule
+/Users/alper/cpp-ethereum/deps/src/secp256k1-stamp/secp256k1-build.rule

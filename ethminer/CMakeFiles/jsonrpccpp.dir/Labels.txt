@@ -1,0 +1,13 @@
+# Target labels
+ jsonrpccpp
+# Source files and their labels
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/jsonrpccpp
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/jsonrpccpp.rule
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/jsonrpccpp-complete.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-install.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-mkdir.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-download.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-update.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-patch.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-configure.rule
+/Users/alper/cpp-ethereum/deps/src/jsonrpccpp-stamp/jsonrpccpp-build.rule

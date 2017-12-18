@@ -1,0 +1,13 @@
+# Target labels
+ cryptopp
+# Source files and their labels
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp.rule
+/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp-complete.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-install.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-mkdir.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-download.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-update.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-patch.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-configure.rule
+/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-build.rule

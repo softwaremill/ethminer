@@ -1,20 +1,12 @@
-set(SOURCES
-	BlockHeader.h BlockHeader.cpp
-	EthashAux.h EthashAux.cpp
-	Exceptions.h
-	Farm.h
-	Miner.h Miner.cpp
-)
+aux_source_directory(. SRC_LIST)
 
+file(GLOB HEADERS "*.h")
 
-include_directories(BEFORE ..)
+add_library(ethcore ${SRC_LIST} ${HEADERS})
 
-add_library(ethcore ${SOURCES})
-target_link_libraries(ethcore ethash devcore)
+find_package(Dev)
 
-if(ETHASHCL)
-	target_link_libraries(ethcore ethash-cl)
-endif()
-if(ETHASHCUDA)
-	target_link_libraries(ethcore ethash-cuda)
-endif()
+target_include_directories(ethcore PRIVATE ..)
+target_include_directories(ethcore PRIVATE ../utils)
+target_link_libraries(ethcore ${Dev_DEVCORE_LIBRARIES})
+target_link_libraries(ethcore ${Dev_DEVCRYPTO_LIBRARIES})

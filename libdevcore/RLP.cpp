@@ -23,6 +23,9 @@
 using namespace std;
 using namespace dev;
 
+bytes dev::RLPNull = rlp("");
+bytes dev::RLPEmptyList = rlpList();
+
 RLP::RLP(bytesConstRef _d, Strictness _s):
 	m_data(_d)
 {
@@ -87,11 +90,16 @@ RLP RLP::operator[](size_t _i) const
 	return RLP(m_lastItem, ThrowOnFail | FailIfTooSmall);
 }
 
-RLPs RLP::toList() const
+RLPs RLP::toList(int _flags) const
 {
 	RLPs ret;
 	if (!isList())
-		return ret;
+	{
+		if (_flags & ThrowOnFail)
+			BOOST_THROW_EXCEPTION(BadCast());
+		else
+			return ret;
+	}
 	for (auto const& i: *this)
 		ret.push_back(i);
 	return ret;
@@ -128,7 +136,7 @@ bool RLP::isInt() const
 	requireGood();
 	byte n = m_data[0];
 	if (n < c_rlpDataImmLenStart)
-		return n != 0;
+		return !!n;
 	else if (n == c_rlpDataImmLenStart)
 		return true;
 	else if (n <= c_rlpDataIndLenZero)
@@ -143,6 +151,8 @@ bool RLP::isInt() const
 			BOOST_THROW_EXCEPTION(BadRLP());
 		return m_data[1 + n - c_rlpDataIndLenZero] != 0;
 	}
+	else
+		return false;
 	return false;
 }
 
@@ -336,4 +346,33 @@ void RLPStream::pushCount(size_t _count, byte _base)
 		BOOST_THROW_EXCEPTION(RLPException() << errinfo_comment("Count too large for RLP"));
 	m_out.push_back((byte)(br + _base));	// max 8 bytes.
 	pushInt(_count, br);
+}
+
+static void streamOut(std::ostream& _out, dev::RLP const& _d, unsigned _depth = 0)
+{
+	if (_depth > 64)
+		_out << "<max-depth-reached>";
+	else if (_d.isNull())
+		_out << "null";
+	else if (_d.isInt())
+		_out << std::showbase << std::hex << std::nouppercase << _d.toInt<bigint>(RLP::LaissezFaire) << dec;
+	else if (_d.isData())
+		_out << escaped(_d.toString(), false);
+	else if (_d.isList())
+	{
+		_out << "[";
+		int j = 0;
+		for (auto i: _d)
+		{
+			_out << (j++ ? ", " : " ");
+			streamOut(_out, i, _depth + 1);
+		}
+		_out << " ]";
+	}
+}
+
+std::ostream& dev::operator<<(std::ostream& _out, RLP const& _d)
+{
+	streamOut(_out, _d);
+	return _out;
 }

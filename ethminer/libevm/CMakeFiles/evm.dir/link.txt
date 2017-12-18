@@ -1,0 +1,2 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar qc libevm.a  CMakeFiles/evm.dir/ExtVMFace.cpp.o CMakeFiles/evm.dir/VM.cpp.o CMakeFiles/evm.dir/VMOpt.cpp.o CMakeFiles/evm.dir/VMCalls.cpp.o CMakeFiles/evm.dir/VMValidate.cpp.o CMakeFiles/evm.dir/VMFactory.cpp.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib libevm.a

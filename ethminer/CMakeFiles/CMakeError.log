@@ -1,0 +1,40 @@
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ 
+Build flags: -std=C++11;-std=libc++
+Id flags:  
+
+The output was:
+1
+error: invalid value 'libc++' in '-std=libc++'
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ 
+Build flags: -std=C++11;-std=libc++
+Id flags: -c 
+
+The output was:
+1
+error: invalid value 'libc++' in '-std=libc++'
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ 
+Build flags: -std=C++11;-std=libc++
+Id flags: --c++ 
+
+The output was:
+1
+clang: error: unsupported option '--c++'
+
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
+Compiler: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ 
+Build flags: -std=C++11;-std=libc++
+Id flags: --ec++ 
+
+The output was:
+1
+clang: error: unsupported option '--ec++'
+
+

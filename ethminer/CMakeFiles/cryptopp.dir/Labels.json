@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/ethminer/CMakeFiles/cryptopp-complete.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-install.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-mkdir.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-download.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-update.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-patch.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-configure.rule"
+		},
+		{
+			"file" : "/Users/alper/cpp-ethereum/deps/src/cryptopp-stamp/cryptopp-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"cryptopp"
+		],
+		"name" : "cryptopp"
+	}
+}

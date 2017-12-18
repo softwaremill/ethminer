@@ -1,0 +1,2 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar qc libwhisper.a  CMakeFiles/whisper.dir/Common.cpp.o CMakeFiles/whisper.dir/Interface.cpp.o CMakeFiles/whisper.dir/Message.cpp.o CMakeFiles/whisper.dir/WhisperDB.cpp.o CMakeFiles/whisper.dir/WhisperHost.cpp.o CMakeFiles/whisper.dir/WhisperPeer.cpp.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib libwhisper.a

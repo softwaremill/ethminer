@@ -21,6 +21,8 @@
 
 #include "Log.h"
 
+#include <string>
+#include <iostream>
 #include <thread>
 #ifdef __APPLE__
 #include <pthread.h>
@@ -40,13 +42,39 @@ mutex x_logOverride;
 /// or equal to the currently output verbosity (g_logVerbosity).
 static map<type_info const*, bool> s_logOverride;
 
-#ifdef _WIN32
+bool dev::isChannelVisible(std::type_info const* _ch, bool _default)
+{
+	Guard l(x_logOverride);
+	if (s_logOverride.count(_ch))
+		return s_logOverride[_ch];
+	return _default;
+}
+
+LogOverrideAux::LogOverrideAux(std::type_info const* _ch, bool _value):
+	m_ch(_ch)
+{
+	Guard l(x_logOverride);
+	m_old = s_logOverride.count(_ch) ? (int)s_logOverride[_ch] : c_null;
+	s_logOverride[m_ch] = _value;
+}
+
+LogOverrideAux::~LogOverrideAux()
+{
+	Guard l(x_logOverride);
+	if (m_old == c_null)
+		s_logOverride.erase(m_ch);
+	else
+		s_logOverride[m_ch] = (bool)m_old;
+}
+
+#if defined(_WIN32)
 const char* LogChannel::name() { return EthGray "..."; }
 const char* LeftChannel::name() { return EthNavy "<--"; }
 const char* RightChannel::name() { return EthGreen "-->"; }
 const char* WarnChannel::name() { return EthOnRed EthBlackBold "  X"; }
 const char* NoteChannel::name() { return EthBlue "  i"; }
 const char* DebugChannel::name() { return EthWhite "  D"; }
+const char* TraceChannel::name() { return EthGray "..."; }
 #else
 const char* LogChannel::name() { return EthGray "···"; }
 const char* LeftChannel::name() { return EthNavy "◀▬▬"; }
@@ -54,6 +82,7 @@ const char* RightChannel::name() { return EthGreen "▬▬▶"; }
 const char* WarnChannel::name() { return EthOnRed EthBlackBold "  ✘"; }
 const char* NoteChannel::name() { return EthBlue "  ℹ"; }
 const char* DebugChannel::name() { return EthWhite "  ◇"; }
+const char* TraceChannel::name() { return EthGray "..."; }
 #endif
 
 LogOutputStreamBase::LogOutputStreamBase(char const* _id, std::type_info const* _info, unsigned _v, bool _autospacing):
@@ -62,9 +91,10 @@ LogOutputStreamBase::LogOutputStreamBase(char const* _id, std::type_info const* 
 {
 	Guard l(x_logOverride);
 	auto it = s_logOverride.find(_info);
-	if ((it != s_logOverride.end() && it->second) || (it == s_logOverride.end() && (int)_v <= g_logVerbosity))
+	if ((it != s_logOverride.end() && it->second == true) || (it == s_logOverride.end() && (int)_v <= g_logVerbosity))
 	{
 		time_t rawTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		unsigned ms = chrono::duration_cast<chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 1000;
 		char buf[24];
 		if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
 			buf[0] = '\0'; // empty if case strftime fails
@@ -72,20 +102,17 @@ LogOutputStreamBase::LogOutputStreamBase(char const* _id, std::type_info const* 
 		static char const* c_sep1 = EthReset EthBlack "|" EthNavy;
 		static char const* c_sep2 = EthReset EthBlack "|" EthTeal;
 		static char const* c_end = EthReset "  ";
-		m_sstr << _id << c_begin << buf << c_sep1 << std::left << std::setw(8) << getThreadName() << ThreadContext::join(c_sep2) << c_end;
+		m_sstr << _id << c_begin << buf << "." << setw(3) << setfill('0') << ms;
+		m_sstr << c_sep1 << getThreadName() << ThreadContext::join(c_sep2) << c_end;
 	}
 }
 
 /// Associate a name with each thread for nice logging.
 struct ThreadLocalLogName
 {
-	ThreadLocalLogName(char const* _name) { name = _name; }
-	thread_local static char const* name;
+	ThreadLocalLogName(std::string const& _name) { m_name.reset(new string(_name)); }
+	boost::thread_specific_ptr<std::string> m_name;
 };
-
-thread_local char const* ThreadLocalLogName::name;
-
-thread_local static std::vector<std::string> logContexts;
 
 /// Associate a name with each thread for nice logging.
 struct ThreadLocalLogContext
@@ -94,21 +121,26 @@ struct ThreadLocalLogContext
 
 	void push(std::string const& _name)
 	{
-		logContexts.push_back(_name);
+		if (!m_contexts.get())
+			m_contexts.reset(new vector<string>);
+		m_contexts->push_back(_name);
 	}
 
 	void pop()
 	{
-		logContexts.pop_back();
+		m_contexts->pop_back();
 	}
 
 	string join(string const& _prior)
 	{
 		string ret;
-		for (auto const& i: logContexts)
-			ret += _prior + i;
+		if (m_contexts.get())
+			for (auto const& i: *m_contexts)
+				ret += _prior + i;
 		return ret;
 	}
+
+	boost::thread_specific_ptr<std::vector<std::string>> m_contexts;
 };
 
 ThreadLocalLogContext g_logThreadContext;
@@ -130,30 +162,48 @@ string dev::ThreadContext::join(string const& _prior)
 	return g_logThreadContext.join(_prior);
 }
 
+// foward declare without all of Windows.h
+#if defined(_WIN32)
+extern "C" __declspec(dllimport) void __stdcall OutputDebugStringA(const char* lpOutputString);
+#endif
+
 string dev::getThreadName()
 {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__GLIBC__) || defined(__APPLE__)
 	char buffer[128];
 	pthread_getname_np(pthread_self(), buffer, 127);
 	buffer[127] = 0;
 	return buffer;
 #else
-	return ThreadLocalLogName::name ? ThreadLocalLogName::name : "<unknown>";
+	return g_logThreadName.m_name.get() ? *g_logThreadName.m_name.get() : "<unknown>";
 #endif
 }
 
-void dev::setThreadName(char const* _n)
+void dev::setThreadName(string const& _n)
 {
-#if defined(__linux__)
-	pthread_setname_np(pthread_self(), _n);
+#if defined(__GLIBC__)
+	pthread_setname_np(pthread_self(), _n.c_str());
 #elif defined(__APPLE__)
-	pthread_setname_np(_n);
+	pthread_setname_np(_n.c_str());
 #else
-	ThreadLocalLogName::name = _n;
+	g_logThreadName.m_name.reset(new std::string(_n));
 #endif
 }
 
-void dev::simpleDebugOut(std::string const& _s)
+void dev::simpleDebugOut(std::string const& _s, char const*)
 {
-	std::cerr << _s << '\n';
+	static SpinLock s_lock;
+	SpinGuard l(s_lock);
+
+	cerr << _s << endl << flush;
+
+	// helpful to use OutputDebugString on windows
+	#if defined(_WIN32)
+	{
+		OutputDebugStringA(_s.data());
+		OutputDebugStringA("\n");
+	}
+	#endif
 }
+
+std::function<void(std::string const&, char const*)> dev::g_logPost = simpleDebugOut;

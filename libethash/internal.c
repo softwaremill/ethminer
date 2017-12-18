@@ -23,12 +23,23 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <stddef.h>
+#include <errno.h>
+#include <math.h>
+#include "mmap.h"
 #include "ethash.h"
 #include "fnv.h"
 #include "endian.h"
 #include "internal.h"
 #include "data_sizes.h"
+#include "io.h"
+
+#ifdef WITH_CRYPTOPP
+
+#include "sha3_cryptopp.h"
+
+#else
 #include "sha3.h"
+#endif // WITH_CRYPTOPP
 
 uint64_t ethash_get_datasize(uint64_t const block_number)
 {
@@ -45,7 +56,7 @@ uint64_t ethash_get_cachesize(uint64_t const block_number)
 // Follows Sergio's "STRICT MEMORY HARD HASHING FUNCTIONS" (2014)
 // https://bitslog.files.wordpress.com/2013/12/memohash-v0-3.pdf
 // SeqMemoHash(s, R, N)
-bool static ethash_compute_cache_nodes(
+static bool ethash_compute_cache_nodes(
 	node* const nodes,
 	uint64_t cache_size,
 	ethash_h256_t const* seed
@@ -97,6 +108,9 @@ void ethash_calculate_dag_item(
 	__m128i xmm1 = ret->xmm[1];
 	__m128i xmm2 = ret->xmm[2];
 	__m128i xmm3 = ret->xmm[3];
+#elif defined(__MIC__)
+	__m512i const fnv_prime = _mm512_set1_epi32(FNV_PRIME);
+	__m512i zmm0 = ret->zmm[0];
 #endif
 
 	for (uint32_t i = 0; i != ETHASH_DATASET_PARENTS; ++i) {
@@ -120,6 +134,14 @@ void ethash_calculate_dag_item(
 			ret->xmm[2] = xmm2;
 			ret->xmm[3] = xmm3;
 		}
+		#elif defined(__MIC__)
+		{
+			zmm0 = _mm512_mullo_epi32(zmm0, fnv_prime);
+
+			// have to write to ret as values are used to compute index
+			zmm0 = _mm512_xor_si512(zmm0, parent->zmm[0]);
+			ret->zmm[0] = zmm0;
+		}
 		#else
 		{
 			for (unsigned w = 0; w != NODE_WORDS; ++w) {
@@ -129,6 +151,35 @@ void ethash_calculate_dag_item(
 #endif
 	}
 	SHA3_512(ret->bytes, ret->bytes, sizeof(node));
+}
+
+bool ethash_compute_full_data(
+	void* mem,
+	uint64_t full_size,
+	ethash_light_t const light,
+	ethash_callback_t callback
+)
+{
+	if (full_size % (sizeof(uint32_t) * MIX_WORDS) != 0 ||
+		(full_size % sizeof(node)) != 0) {
+		return false;
+	}
+	uint32_t const max_n = (uint32_t)(full_size / sizeof(node));
+	node* full_nodes = mem;
+	double const progress_change = 1.0f / max_n;
+	double progress = 0.0f;
+	// now compute full nodes
+	for (uint32_t n = 0; n != max_n; ++n) {
+		if (callback &&
+			n % (max_n / 100) == 0 &&
+			callback((unsigned int)(ceil(progress * 100.0f))) != 0) {
+
+			return false;
+		}
+		progress += progress_change;
+		ethash_calculate_dag_item(&(full_nodes[n]), n, light);
+	}
+	return true;
 }
 
 static bool ethash_hash(
@@ -187,6 +238,14 @@ static bool ethash_hash(
 				mix[n].xmm[2] = _mm_xor_si128(xmm2, dag_node->xmm[2]);
 				mix[n].xmm[3] = _mm_xor_si128(xmm3, dag_node->xmm[3]);
 			}
+			#elif defined(__MIC__)
+			{
+				// __m512i implementation via union
+				//	Each vector register (zmm) can store sixteen 32-bit integer numbers
+				__m512i fnv_prime = _mm512_set1_epi32(FNV_PRIME);
+				__m512i zmm0 = _mm512_mullo_epi32(fnv_prime, mix[n].zmm[0]);
+				mix[n].zmm[0] = _mm512_xor_si512(zmm0, dag_node->zmm[0]);
+			}
 			#else
 			{
 				for (unsigned w = 0; w != NODE_WORDS; ++w) {
@@ -198,6 +257,22 @@ static bool ethash_hash(
 
 	}
 
+// Workaround for a GCC regression which causes a bogus -Warray-bounds warning.
+// The regression was introduced in GCC 4.8.4, fixed in GCC 5.0.0 and backported to GCC 4.9.3 but
+// never to the GCC 4.8.x line.
+//
+// See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56273
+//
+// This regression is affecting Debian Jesse (8.5) builds of cpp-ethereum (GCC 4.9.2) and also
+// manifests in the doublethinkco armel v5 cross-builds, which use crosstool-ng and resulting
+// in the use of GCC 4.8.4.  The Tizen runtime wants an even older GLIBC version - the one from
+// GCC 4.6.0!
+
+#if defined(__GNUC__) && (__GNUC__ < 5)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif // define (__GNUC__)
+
 	// compress mix
 	for (uint32_t w = 0; w != MIX_WORDS; w += 4) {
 		uint32_t reduction = mix->words[w + 0];
@@ -207,11 +282,31 @@ static bool ethash_hash(
 		mix->words[w / 4] = reduction;
 	}
 
+#if defined(__GNUC__) && (__GNUC__ < 5)
+#pragma GCC diagnostic pop
+#endif // define (__GNUC__)
+
 	fix_endian_arr32(mix->words, MIX_WORDS / 4);
 	memcpy(&ret->mix_hash, mix->bytes, 32);
 	// final Keccak hash
 	SHA3_256(&ret->result, s_mix->bytes, 64 + 32); // Keccak-256(s + compressed_mix)
 	return true;
+}
+
+void ethash_quick_hash(
+	ethash_h256_t* return_hash,
+	ethash_h256_t const* header_hash,
+	uint64_t const nonce,
+	ethash_h256_t const* mix_hash
+)
+{
+	uint8_t buf[64 + 32];
+	memcpy(buf, header_hash, 32);
+	fix_endian64_same(nonce);
+	memcpy(&(buf[32]), &nonce, 8);
+	SHA3_512(buf, buf, 40);
+	memcpy(&(buf[64]), mix_hash, 32);
+	SHA3_256(return_hash, buf, 64 + 32);
 }
 
 ethash_h256_t ethash_get_seedhash(uint64_t block_number)
@@ -224,6 +319,19 @@ ethash_h256_t ethash_get_seedhash(uint64_t block_number)
 	return ret;
 }
 
+bool ethash_quick_check_difficulty(
+	ethash_h256_t const* header_hash,
+	uint64_t const nonce,
+	ethash_h256_t const* mix_hash,
+	ethash_h256_t const* boundary
+)
+{
+
+	ethash_h256_t return_hash;
+	ethash_quick_hash(&return_hash, header_hash, nonce, mix_hash);
+	return ethash_check_difficulty(&return_hash, boundary);
+}
+
 ethash_light_t ethash_light_new_internal(uint64_t cache_size, ethash_h256_t const* seed)
 {
 	struct ethash_light *ret;
@@ -231,7 +339,11 @@ ethash_light_t ethash_light_new_internal(uint64_t cache_size, ethash_h256_t cons
 	if (!ret) {
 		return NULL;
 	}
+#if defined(__MIC__)
+	ret->cache = _mm_malloc((size_t)cache_size, 64);
+#else
 	ret->cache = malloc((size_t)cache_size);
+#endif
 	if (!ret->cache) {
 		goto fail_free_light;
 	}
@@ -243,7 +355,11 @@ ethash_light_t ethash_light_new_internal(uint64_t cache_size, ethash_h256_t cons
 	return ret;
 
 fail_free_cache_mem:
+#if defined(__MIC__)
+	_mm_free(ret->cache);
+#else
 	free(ret->cache);
+#endif
 fail_free_light:
 	free(ret);
 	return NULL;
@@ -289,4 +405,167 @@ ethash_return_value_t ethash_light_compute(
 {
 	uint64_t full_size = ethash_get_datasize(light->block_number);
 	return ethash_light_compute_internal(light, full_size, header_hash, nonce);
+}
+
+static bool ethash_mmap(struct ethash_full* ret, FILE* f)
+{
+	int fd;
+	char* mmapped_data;
+	errno = 0;
+	ret->file = f;
+	if ((fd = ethash_fileno(ret->file)) == -1) {
+		return false;
+	}
+	mmapped_data = mmap(
+		NULL,
+		(size_t)ret->file_size + ETHASH_DAG_MAGIC_NUM_SIZE,
+		PROT_READ | PROT_WRITE,
+		MAP_SHARED,
+		fd,
+		0
+	);
+	if (mmapped_data == MAP_FAILED) {
+		return false;
+	}
+	ret->data = (node*)(mmapped_data + ETHASH_DAG_MAGIC_NUM_SIZE);
+	return true;
+}
+
+ethash_full_t ethash_full_new_internal(
+	char const* dirname,
+	ethash_h256_t const seed_hash,
+	uint64_t full_size,
+	ethash_light_t const light,
+	ethash_callback_t callback
+)
+{
+	struct ethash_full* ret;
+	FILE *f = NULL;
+	ret = calloc(sizeof(*ret), 1);
+	if (!ret) {
+		return NULL;
+	}
+	ret->file_size = (size_t)full_size;
+	switch (ethash_io_prepare(dirname, seed_hash, &f, (size_t)full_size, false)) {
+	case ETHASH_IO_FAIL:
+		// ethash_io_prepare will do all ETHASH_CRITICAL() logging in fail case
+		goto fail_free_full;
+	case ETHASH_IO_MEMO_MATCH:
+		if (!ethash_mmap(ret, f)) {
+			ETHASH_CRITICAL("mmap failure()");
+			goto fail_close_file;
+		}
+#if defined(__MIC__)
+		node* tmp_nodes = _mm_malloc((size_t)full_size, 64);
+		//copy all nodes from ret->data
+		//mmapped_nodes are not aligned properly
+		uint32_t const countnodes = (uint32_t) ((size_t)ret->file_size / sizeof(node));
+		//fprintf(stderr,"ethash_full_new_internal:countnodes:%d",countnodes);
+		for (uint32_t i = 1; i != countnodes; ++i) {
+			tmp_nodes[i] = ret->data[i];
+		}
+		ret->data = tmp_nodes;
+#endif
+		return ret;
+	case ETHASH_IO_MEMO_SIZE_MISMATCH:
+		// if a DAG of same filename but unexpected size is found, silently force new file creation
+		if (ethash_io_prepare(dirname, seed_hash, &f, (size_t)full_size, true) != ETHASH_IO_MEMO_MISMATCH) {
+			ETHASH_CRITICAL("Could not recreate DAG file after finding existing DAG with unexpected size.");
+			goto fail_free_full;
+		}
+		// fallthrough to the mismatch case here, DO NOT go through match
+	case ETHASH_IO_MEMO_MISMATCH:
+		if (!ethash_mmap(ret, f)) {
+			ETHASH_CRITICAL("mmap failure()");
+			goto fail_close_file;
+		}
+		break;
+	}
+
+#if defined(__MIC__)
+	ret->data = _mm_malloc((size_t)full_size, 64);
+#endif
+	if (!ethash_compute_full_data(ret->data, full_size, light, callback)) {
+		ETHASH_CRITICAL("Failure at computing DAG data.");
+		goto fail_free_full_data;
+	}
+
+	// after the DAG has been filled then we finalize it by writting the magic number at the beginning
+	if (fseek(f, 0, SEEK_SET) != 0) {
+		ETHASH_CRITICAL("Could not seek to DAG file start to write magic number.");
+		goto fail_free_full_data;
+	}
+	uint64_t const magic_num = ETHASH_DAG_MAGIC_NUM;
+	if (fwrite(&magic_num, ETHASH_DAG_MAGIC_NUM_SIZE, 1, f) != 1) {
+		ETHASH_CRITICAL("Could not write magic number to DAG's beginning.");
+		goto fail_free_full_data;
+	}
+	if (fflush(f) != 0) {// make sure the magic number IS there
+		ETHASH_CRITICAL("Could not flush memory mapped data to DAG file. Insufficient space?");
+		goto fail_free_full_data;
+	}
+	return ret;
+
+fail_free_full_data:
+	// could check that munmap(..) == 0 but even if it did not can't really do anything here
+	munmap(ret->data, (size_t)full_size);
+#if defined(__MIC__)
+	_mm_free(ret->data);
+#endif
+fail_close_file:
+	fclose(ret->file);
+fail_free_full:
+	free(ret);
+	return NULL;
+}
+
+ethash_full_t ethash_full_new(ethash_light_t light, ethash_callback_t callback)
+{
+	char strbuf[256];
+	if (!ethash_get_default_dirname(strbuf, 256)) {
+		return NULL;
+	}
+	uint64_t full_size = ethash_get_datasize(light->block_number);
+	ethash_h256_t seedhash = ethash_get_seedhash(light->block_number);
+	return ethash_full_new_internal(strbuf, seedhash, full_size, light, callback);
+}
+
+void ethash_full_delete(ethash_full_t full)
+{
+	// could check that munmap(..) == 0 but even if it did not can't really do anything here
+	munmap(full->data, (size_t)full->file_size);
+	if (full->file) {
+		fclose(full->file);
+	}
+	free(full);
+}
+
+ethash_return_value_t ethash_full_compute(
+	ethash_full_t full,
+	ethash_h256_t const header_hash,
+	uint64_t nonce
+)
+{
+	ethash_return_value_t ret;
+	ret.success = true;
+	if (!ethash_hash(
+		&ret,
+		(node const*)full->data,
+		NULL,
+		full->file_size,
+		header_hash,
+		nonce)) {
+		ret.success = false;
+	}
+	return ret;
+}
+
+void const* ethash_full_dag(ethash_full_t full)
+{
+	return full->data;
+}
+
+uint64_t ethash_full_dag_size(ethash_full_t full)
+{
+	return full->file_size;
 }
