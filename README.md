@@ -1,196 +1,161 @@
-# ethminer
+# cpp-ethereum - Ethereum C++ client
 
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
-[![Releases](https://img.shields.io/github/downloads/atom/atom/total.svg)][Releases]
+This repository contains [cpp-ethereum](http://cpp-ethereum.org), the [Ethereum](http://ethereum.org) C++ client.
 
-> Ethereum miner with OpenCL, CUDA and stratum support
-
-The ethminer is an Ethereum GPU mining worker. This is the actively maintained version of ethminer. It originates from [cpp-ethereum] project (where GPU mining has been discontinued) and builds on the improvements made in [Genoil's fork]. See [FAQ](#faq) for more details.
-
-### Features
-
-- OpenCL mining
-- Nvidia CUDA mining
-- realistic benchmarking against arbitrary epoch/DAG/blocknumber
-- on-GPU DAG generation (no more DAG files on disk)
-- stratum mining without proxy
-- OpenCL devices picking
-- farm failover (getwork + stratum)
+It is the third most popular of the Ethereum clients, behind [geth](https://github.com/ethereum/go-ethereum) (the [go](https://golang.org)
+client) and [Parity](https://github.com/ethcore/parity) (the [rust](https://www.rust-lang.org/) client).  The code is exceptionally
+[portable](http://cpp-ethereum.org/portability.html) and has been used successfully on a very broad range
+of operating systems and hardware.
 
 
-## Table of Contents
+## Contact
 
-- [Install](#install)
-- [Usage](#usage)
-- [Build](#build)
-  - [Continuous Integration and development builds](#continuous-integration-and-development-builds)
-  - [Building from source](#building-from-source)
-  - [CMake configuration options](#cmake-configuration-options)
-- [Maintainer](#maintainer)  
-- [Contribute](#contribute)
-- [F.A.Q.](#faq)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ethereum/cpp-ethereum)
+[![GitHub Issues](https://img.shields.io/github/issues-raw/badges/shields.svg)](https://github.com/ethereum/cpp-ethereum/issues)
+
+- Chat in [cpp-ethereum channel on Gitter](https://gitter.im/ethereum/cpp-ethereum).
+- Report bugs, issues or feature requests using [GitHub issues](issues/new).
 
 
-## Install
+## Getting Started
 
-[![Releases](https://img.shields.io/github/downloads/atom/atom/total.svg)][Releases]
-
-Standalone **executables** for _Linux_, _macOS_ and _Windows_ are provided in
-the [Releases] section.
-Download an archive for your operating system and unpack the content to a place
-accessible from command line. The ethminer is ready to go.
+The Ethereum Documentation site hosts the **[cpp-ethereum homepage](http://cpp-ethereum.org)**, which
+has a Quick Start section.
 
 
-## Usage
+Operating system | Status
+---------------- | ----------
+Ubuntu and macOS | [![TravisCI](https://img.shields.io/travis/ethereum/cpp-ethereum/develop.svg)](https://travis-ci.org/ethereum/cpp-ethereum)
+Windows          | [![AppVeyor](https://img.shields.io/appveyor/ci/ethereum/cpp-ethereum/develop.svg)](https://ci.appveyor.com/project/ethereum/cpp-ethereum)
 
-The **ethminer** is a command line program. This means you launch it either
-from a Windows command prompt or Linux console, or create shortcuts to
-predefined command lines using a Linux Bash script or Windows batch/cmd file.
-For a full list of available command, please run
 
-```sh
-ethminer --help
+## Building from source
+
+### Get the source code
+
+Git and GitHub is used to maintain the source code. Clone the repository by:
+
+```shell
+git clone --recursive https://github.com/ethereum/cpp-ethereum.git
+cd cpp-ethereum
 ```
 
+The `--recursive` option is important. It orders git to clone additional 
+submodules which are required to build the project.
+If you missed it you can correct your mistake with command 
+`git submodule update --init`.
 
-## Build
+### Install CMake
 
-### Continuous Integration and development builds
+CMake is used to control the build configuration of the project. Quite recent 
+version of CMake is required 
+(at the time of writing [3.4.3 is the minimum](CMakeLists.txt#L25)).
+We recommend installing CMake by downloading and unpacking the binary 
+distribution  of the latest version available on the 
+[**CMake download page**](https://cmake.org/download/).
 
-| CI            | OS            | Status  | Development builds |
-| ------------- | ------------- | -----   | -----------------  |
-| [Travis CI]   | Linux, macOS  | [![Travis CI](https://img.shields.io/travis/ethereum-mining/ethminer.svg)][Travis CI]    | ✗ No build artifacts, [Amazon S3 is needed] for this |
-| [AppVeyor]    | Windows       | [![AppVeyor](https://img.shields.io/appveyor/ci/ethereum-mining/ethminer.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and branches |
+The CMake package available in your operating system can also be installed
+and used if it meets the minimum version requirement.
 
-The AppVeyor system automatically builds a Windows .exe for every commit. The latest version is always available [on the landing page](https://ci.appveyor.com/project/ethereum-mining/ethminer) or you can [browse the history](https://ci.appveyor.com/project/ethereum-mining/ethminer/history) to access previous builds.
+> **Alternative method**
+>
+> The repository contains the
+[scripts/install_cmake.sh](scripts/install_cmake.sh) script that downloads 
+> a fixed version of CMake and unpacks it to the given directory prefix. 
+> Example usage: `scripts/install_cmake.sh --prefix /usr/local`.
 
-To download the .exe on a build under 'JOB NAME' select 'Configuration: Release', choose 'ARTIFACTS' then download the zip file.
+### Install dependencies (Linux, macOS)
+
+The following *libraries* are required to be installed in the system in their
+development variant:
+
+- leveldb
+- curl
+- microhttpd
+
+They usually can be installed using system-specific package manager.
+Examples for some systems:
+
+Operating system | Installation command
+---------------- | --------------------
+Debian-based     | `sudo apt-get install libleveldb-dev libcurl4-openssl-dev libmicrohttpd-dev`
+RedHat-based     | `dnf install leveldb-devel curl-devel libmicrohttpd-devel`
+macOS            | `brew install leveldb libmicrohttpd`
 
 
-### Building from source
+We also support a "one-button" shell script 
+[scripts/install_deps.sh](scripts/install_deps.sh)
+which attempts to aggregate dependencies installation instructions for Unix-like
+operating systems. It identifies your distro and installs the external packages.
+Supporting the script is non-trivial task so please [inform us](#contact)
+if it does not work for your use-case.
 
-This project uses [CMake] and [Hunter] package manager.
+### Install dependencies (Windows)
 
-1. Create a build directory.
+We provide prebuilt dependencies required to build the project. Download them
+with the [scripts/install_deps.bat](scripts/install_deps.bat) script.
 
-   ```sh
-   mkdir build; cd build
-   ```
-
-2. Configure the project with CMake. Check out additional
-   [configuration options](#cmake-configuration-options).
-
-   ```sh
-   cmake ..
-   ```
-
-3. Build the project using [CMake Build Tool Mode]. This is a portable variant
-   of `make`.
-
-   ```sh
-   cmake --build .
-   ```
-
-4. _(Optional, Linux only)_ Install the built executable.
-
-   ```sh
-   sudo make install
-   ```
-
-#### OpenCL support on Linux
-
-If you're planning to use [OpenCL on Linux](https://github.com/ruslo/hunter/wiki/pkg.opencl#pitfalls)
-you have to install OpenGL libraries. E.g. on Ubuntu run:
-
-```sh
-sudo apt-get install mesa-common-dev
+```shell
+scripts/install_deps.bat
 ```
 
-#### Disable Hunter
+### Build
 
-If you want to install dependencies yourself or use system package manager
-you can disable Hunter by adding
-[-DHUNTER_ENABLED=OFF](https://docs.hunter.sh/en/latest/reference/user-variables.html#hunter-enabled)
-to configuration options.
+Configure the project build with the following command. It will create the 
+`build` directory with the configuration.
 
-### CMake configuration options
-
-Pass these options to CMake configuration command, e.g.
-
-```sh
-cmake .. -DETHASHCUDA=ON -DETHASHCL=OFF
+```shell
+cmake -H. -Bbuild
+cmake --build build
 ```
 
-- `-DETHASHCL=ON` - enable OpenCL mining, `ON` by default,
-- `-DETHASHCUDA=ON` - enable CUDA mining, `OFF` by default,
-- `-DETHSTRATUM=ON` - build with Stratum protocol support, `ON` by default.
+On **Windows** Visual Studio 2015 is required. You should generate Visual Studio 
+solution file (.sln) for 64-bit architecture by adding 
+`-G "Visual Studio 14 2015 Win64"` argument to the CMake configure command.
+After configuration is completed the `cpp-ethereum.sln` can be found in the
+`build` directory.
+
+```shell
+cmake -H. -Bbuild -G "Visual Studio 14 2015 Win64"
+```
+
+## Contributing
+
+[![Contributors](https://img.shields.io/github/contributors/ethereum/cpp-ethereum.svg)](https://github.com/ethereum/cpp-ethereum/graphs/contributors)
+[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ethereum/cpp-ethereum)
+[![up-for-grabs](https://img.shields.io/github/issues-raw/ethereum/cpp-ethereum/up-for-grabs.svg)](https://github.com/ethereum/cpp-ethereum/labels/up-for-grabs)
+
+The current codebase is the work of many, many hands, with nearly 100
+[individual contributors](https://github.com/ethereum/cpp-ethereum/graphs/contributors) over the course of its development.
+
+Our day-to-day development chat happens on the
+[cpp-ethereum](https://gitter.im/ethereum/cpp-ethereum) Gitter channel.
+
+All contributions are welcome! We try to keep a list of tasks that are suitable
+for newcomers under the tag 
+[up-for-grabs](https://github.com/ethereum/cpp-ethereum/labels/up-for-grabs).
+If you have any questions, please just ask.
+
+Please read [CodingStandards.txt](CodingStandards.txt) thoroughly before making
+alterations to the code base.
+
+All development goes in develop branch.
 
 
-## Maintainer
+## Mining
 
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
+This project is **not suitable for Ethereum mining**. The support for GPU mining 
+has been dropped some time ago including the ethminer tool. Try using
+the fork https://github.com/genoil/cpp-ethereum.
 
-- Paweł Bylica [@chfast](https://github.com/chfast)
+## Testing
 
-
-## Contribute
-
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
-
-To meet the community, ask general questions and chat about ethminer join [the ethminer channel on Gitter][Gitter].
-
-All bug reports, pull requests and code reviews are very much welcome.
+To run the tests, make sure you clone https://github.com/ethereum/tests and point the environment variable
+`ETHEREUM_TEST_PATH` to that path.
 
 
-## F.A.Q
+## License
 
-1. Why is my hashrate with Nvidia cards on Windows 10 so low?
+[![License](https://img.shields.io/github/license/ethereum/cpp-ethereum.svg)](LICENSE)
 
-   The new WDDM 2.x driver on Windows 10 uses a different way of addressing the GPU. This is good for a lot of things, but not for ETH mining.
-   For Kepler GPUs: I actually don't know. Please let me know what works best for good old Kepler.
-   For Maxwell 1 GPUs: Unfortunately the issue is a bit more serious on the GTX750Ti, already causing suboptimal performance on Win7 and Linux. Apparently about 4MH/s can still be reached on Linux, which, depending on ETH price, could still be profitable, considering the relatively low power draw.
-   For Maxwell 2 GPUs: There is a way of mining ETH at Win7/8/Linux speeds on Win10, by downgrading the GPU driver to a Win7 one (350.12 recommended) and using a build that was created using CUDA 6.5.
-   For Pascal GPUs: You have to use the latest WDDM 2.1 compatible drivers in combination with Windows 10 Anniversary edition in order to get the full potential of your Pascal GPU.
-
-2. Why is a GTX 1080 slower than a GTX 1070?
-
-   Because of the GDDR5X memory, which can't be fully utilized for ETH mining (yet).
-
-3. Are AMD cards also affected by slowdowns with increasing DAG size?
-
-   Only GCN 1.0 GPUs (78x0, 79x0, 270, 280), but in a different way. You'll see that on each new epoch (30K blocks), the hashrate will go down a little bit.
-
-4. Can I still mine ETH with my 2GB GPU?
-
-   Not really, your VRAM must be above the DAG size (Currently about 2.15 GB.) to get best performance. Without it severe hash loss will occur.
-
-5. What are the optimal launch parameters?
-
-   The default parameters are fine in most scenario's (CUDA). For OpenCL it varies a bit more. Just play around with the numbers and use powers of 2. GPU's like powers of 2.
-   
-6. What does the ```--cuda-parallel-hash``` flag do?
-
-   @davilizh made improvements to the CUDA kernel hashing process and added this flag to allow changing the number of tasks it runs in parallel. These improvements were optimised for GTX 1060 GPUs which saw a large increase in hashrate, GTX 1070 and GTX 1080/Ti GPUs saw some, but less, improvement. The default value is 4 (which does not need to be set with the flag) and in most cases this will provide the best performance.
-
-7. What is ethminer's relationship with [Genoil's fork]?
-
-   [Genoil's fork] was the original source of this version, but as Genoil is no longer consistently maintaining that fork it became almost impossible for developers to get new code merged there. In the interests of progressing development without waiting for reviews this fork should be considered the active one and Genoil's as legacy code.
-
-8. Can I CPU Mine?
- 
-  No, use geth, the go program made for ethereum by ethereum.
-
-
-
-
-[Amazon S3 is needed]: https://docs.travis-ci.com/user/uploading-artifacts/
-[AppVeyor]: https://ci.appveyor.com/project/ethereum-mining/ethminer
-[CMake]: https://cmake.org
-[CMake Build Tool Mode]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#build-tool-mode
-[cpp-ethereum]: https://github.com/ethereum/cpp-ethereum
-[Genoil's fork]: https://github.com/Genoil/cpp-ethereum
-[Gitter]: https://gitter.im/ethereum-mining/ethminer
-[Hunter]: https://docs.hunter.sh
-[Releases]: https://github.com/ethereum-mining/ethminer/releases
-[Travis CI]: https://travis-ci.org/ethereum-mining/ethminer
+All contributions are made under the [GNU General Public License v3](http://www.gnu.org/licenses/gpl-3.0.en.html). See [LICENSE](LICENSE).
