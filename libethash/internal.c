@@ -469,7 +469,7 @@ ethash_full_t ethash_full_new_internal(
 		return ret;
 	case ETHASH_IO_MEMO_SIZE_MISMATCH:
 		// if a DAG of same filename but unexpected size is found, silently force new file creation
-		if (ethash_io_prepare(dirname, seed_hash, &f, (size_t)full_size, true) != ETHASH_IO_MEMO_MISMATCH) {
+		if (ethash_io_prepare(dirname, seed_hash, &f, (size_t)full_size, true) != ETHASH_IO_MEMO_MISMATCH) { // Fallthrough.
 			ETHASH_CRITICAL("Could not recreate DAG file after finding existing DAG with unexpected size.");
 			goto fail_free_full;
 		}

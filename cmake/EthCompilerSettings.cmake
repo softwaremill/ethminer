@@ -31,6 +31,10 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 	add_compile_options(-Wextra)
 	add_compile_options(-Werror)
 
+	add_compile_options(-Wno-implicit-fallthrough)
+        add_compile_options(-Wno-maybe-uninitialized)
+	add_compile_options(-Wno-deprecated)
+
 	# Disable warnings about unknown pragmas (which is enabled by -Wall).
 	add_compile_options(-Wno-unknown-pragmas)
 
